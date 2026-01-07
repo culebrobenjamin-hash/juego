@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reto: El Ciclo del Agua</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --secondary: #00d4ff;
+            --dark: #1a1a2e;
+            --light: #f0f8ff;
+            --danger: #ff4d4d;
+            --success: #28a745;
+            --overlay-color: #2c3e50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL DEL JUEGO --- */
+        #game-container {
+            width: 95%;
+            max-width: 900px;
+            background: #fff;
+            color: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header del juego */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats {
+            font-weight: bold;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Área Visual (Imagen + Cuadros) */
+        #visual-area {
+            position: relative;
+            width: 100%;
+            height: 300px; /* Altura fija para la imagen */
+            background-image: url('https://i.postimg.cc/MH3V8mzg/Captura-de-pantalla-2023-03-21-145856.png');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        #grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 columnas */
+            grid-template-rows: repeat(2, 1fr);    /* 2 filas = 10 cuadros */
+        }
+
+        .cover-block {
+            background-color: var(--overlay-color);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255,255,255,0.2);
+            font-size: 2rem;
+        }
+
+        .cover-block.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Área de Preguntas */
+        #quiz-area {
+            padding: 20px;
+            text-align: center;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 5px;
+            background: #eee;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #timer-fill {
+            height: 100%;
+            background: var(--danger);
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        h2.question-text {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            min-height: 50px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button.option-btn {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        button.option-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        button.option-btn.correct {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        button.option-btn.wrong {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        /* --- LANDING PAGE (Ventas) --- */
+        #sales-landing {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 100;
+            overflow-y: auto;
+            color: #333;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #sales-landing.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .landing-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .landing-header {
+            margin-bottom: 30px;
+        }
+        
+        .landing-header h1 {
+            color: var(--danger);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .superpower {
+            background: #fdf2f2;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid var(--danger);
+            text-align: left;
+        }
+
+        .promo-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 10px 20px rgba(118, 75, 162, 0.4);
+        }
+
+        .promo-box h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #ffc107;
+            color: #333;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .link-card {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+        }
+
+        .link-card:hover {
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+
+        .retry-btn {
+            margin-top: 40px;
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* --- PANTALLA DE VICTORIA --- */
+        #win-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 50;
+            text-align: center;
+        }
+        #win-screen.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Responsivo móvil */
+        @media (max-width: 600px) {
+            .options-grid { grid-template-columns: 1fr; }
+            #visual-area { height: 200px; }
+            .landing-header h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <header>
+            <div>💧 Ciclo del Agua</div>
+            <div class="stats">
+                <span>Vidas: <span id="lives-display">❤️❤️❤️</span></span>
+                <span>Nivel: <span id="level-display">1/10</span></span>
+            </div>
+        </header>
+
+        <div id="visual-area">
+            <div id="grid-overlay">
+                </div>
+        </div>
+
+        <div id="quiz-area">
+            <div id="timer-bar"><div id="timer-fill"></div></div>
+            <h2 id="question-text" class="question-text">Cargando pregunta...</h2>
+            <div id="options-container" class="options-grid">
+                </div>
+        </div>
+
+        <div id="win-screen">
+            <h1>¡Felicidades! 🎉</h1>
+            <p>Has completado el ciclo del agua.</p>
+            <button class="retry-btn" onclick="initGame()" style="background: var(--success); margin-top: 20px;">Jugar de Nuevo</button>
+        </div>
+    </div>
+
+    <div id="sales-landing">
+        <div class="landing-content">
+            <div class="landing-header">
+                <h1>No completaste el reto 😥...</h1>
+                <p>...pero no te preocupes, ¡te espero en mis cursos para que amplíes tu dominio de Excel y Power BI!</p>
+            </div>
+
+            <div class="superpower">
+                <h3>📊 Superpoderes Laborales</h3>
+                <p>Excel y Power BI son más que herramientas: son <strong>superpoderes</strong> en el mundo laboral actual.</p>
+            </div>
+
+            <div class="promo-box">
+                <h2>🧠 Domina los Datos</h2>
+                <p>¿Quieres dominar desde lo básico hasta lo avanzado en Excel? ¿Aprender a visualizar datos como un profesional con Power BI?</p>
+                <br>
+                <h3>💥 PROMO ESPECIAL: 40% OFF</h3>
+                <p>¡Este combo es para ti! Llévate el paquete completo:</p>
+                <a href="https://pay.hotmart.com/I99331746U" target="_blank" class="cta-button">OBTENER EL COMBO 🚀</a>
+            </div>
+
+            <div style="text-align: left; margin-top: 30px;">
+                <p>Si quieres comprarlos por separado, entra al enlace individual:</p>
+                <div class="links-grid">
+                    <a href="https://go.hotmart.com/N97400718B" target="_blank" class="link-card">✅ Excel Básico (explorador)</a>
+                    <a href="https://go.hotmart.com/X95014046D" target="_blank" class="link-card">✅ Excel Intermedio (estratega)</a>
+                    <a href="https://go.hotmart.com/O92491385M" target="_blank" class="link-card">✅ Excel Avanzado (conquistador)</a>
+                    <a href="https://go.hotmart.com/F88449789Y" target="_blank" class="link-card">✅ Power BI</a>
+                </div>
+            </div>
+
+            <button class="retry-btn" onclick="initGame()">Intentar de Nuevo</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN DEL JUEGO ---
+        const questions = [
+            { q: "¿Cómo se llama el proceso cuando el agua se convierte en vapor?", options: ["Evaporación", "Solidificación", "Fusión", "Sublimación"], a: 0 },
+            { q: "¿Qué sucede cuando el vapor de agua se enfría y forma nubes?", options: ["Precipitación", "Condensación", "Infiltración", "Transpiración"], a: 1 },
+            { q: "¿Cómo cae el agua de las nubes a la tierra?", options: ["Evaporación", "Sublimación", "Precipitación", "Condensación"], a: 2 },
+            { q: "¿Cuál es la fuente de energía que impulsa el ciclo del agua?", options: ["La Luna", "El Viento", "El Sol", "La Gravedad"], a: 2 },
+            { q: "¿Dónde se almacena la mayor parte del agua de la Tierra?", options: ["Ríos", "Glaciares", "Lagos", "Océanos"], a: 3 },
+            { q: "¿Cómo se llama el agua que fluye por la superficie de la tierra hacia los ríos?", options: ["Escorrentía", "Filtración", "Absorción", "Evaporación"], a: 0 },
+            { q: "¿Qué proceso realizan las plantas para liberar agua al aire?", options: ["Fotosíntesis", "Transpiración", "Respiración", "Digestión"], a: 1 },
+            { q: "¿Qué estado del agua es el hielo?", options: ["Líquido", "Gaseoso", "Sólido", "Plasma"], a: 2 },
+            { q: "¿El ciclo del agua tiene un punto final?", options: ["Sí, en el mar", "Sí, en las nubes", "No, es un ciclo continuo", "Sí, bajo tierra"], a: 2 },
+            { q: "¿Qué pasa con el agua que se filtra bajo el suelo?", options: ["Desaparece", "Se vuelve lava", "Se convierte en agua subterránea", "Se evapora al instante"], a: 2 }
+        ];
+
+        let currentQIndex = 0;
+        let lives = 3;
+        let timer;
+        const timePerQuestion = 15; // Segundos
+        let timeLeft = timePerQuestion;
+
+        // Elementos del DOM
+        const gridOverlay = document.getElementById('grid-overlay');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const timerFill = document.getElementById('timer-fill');
+        const livesDisplay = document.getElementById('lives-display');
+        const levelDisplay = document.getElementById('level-display');
+        const salesLanding = document.getElementById('sales-landing');
+        const gameContainer = document.getElementById('game-container');
+        const winScreen = document.getElementById('win-screen');
+
+        // --- INICIALIZACIÓN ---
+        function initGame() {
+            // Resetear variables
+            currentQIndex = 0;
+            lives = 3;
+            timeLeft = timePerQuestion;
+            
+            // UI Reset
+            salesLanding.classList.remove('active');
+            winScreen.classList.remove('active');
+            gameContainer.style.display = 'flex'; // Asegurar que el juego se vea
+            updateLives();
+            
+            // Crear Grid (10 cuadros)
+            createGrid();
+            
+            // Cargar primera pregunta
+            loadQuestion();
+        }
+
+        function createGrid() {
+            gridOverlay.innerHTML = '';
+            // Creamos 10 bloques (coinciden con 10 preguntas)
+            for (let i = 0; i < 10; i++) {
+                const div = document.createElement('div');
+                div.classList.add('cover-block');
+                div.id = `block-${i}`;
+                div.innerHTML = '💧'; // Icono decorativo
+                gridOverlay.appendChild(div);
+            }
+        }
+
+        function updateLives() {
+            let hearts = "";
+            for(let i=0; i<lives; i++) hearts += "❤️";
+            for(let i=lives; i<3; i++) hearts += "🖤"; // Corazón vacío
+            livesDisplay.innerHTML = hearts;
+        }
+
+        // --- LÓGICA DEL JUEGO ---
+        function loadQuestion() {
+            if (currentQIndex >= questions.length) {
+                gameWin();
+                return;
+            }
+
+            // Actualizar nivel
+            levelDisplay.innerText = `${currentQIndex + 1}/${questions.length}`;
+
+            // Reset Timer
+            clearInterval(timer);
+            timeLeft = timePerQuestion;
+            timerFill.style.width = '100%';
+            timerFill.style.backgroundColor = 'var(--danger)';
+            
+            const q = questions[currentQIndex];
+            questionText.innerText = q.q;
+            optionsContainer.innerHTML = '';
+
+            // Crear botones de opciones
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.classList.add('option-btn');
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                const percentage = (timeLeft / timePerQuestion) * 100;
+                timerFill.style.width = `${percentage}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    handleWrongAnswer(null); // Tiempo agotado = respuesta incorrecta
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            clearInterval(timer);
+            const correctIndex = questions[currentQIndex].a;
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            // Deshabilitar botones para evitar doble click
+            buttons.forEach(b => b.disabled = true);
+
+            if (selectedIndex === correctIndex) {
+                // CORRECTO
+                if(btnElement) btnElement.classList.add('correct');
+                revealImagePiece();
+                setTimeout(nextQuestion, 1000);
+            } else {
+                // INCORRECTO
+                if(btnElement) btnElement.classList.add('wrong');
+                // Mostrar cual era la correcta
+                buttons[correctIndex].classList.add('correct');
+                handleWrongAnswer();
+            }
+        }
+
+        function revealImagePiece() {
+            const block = document.getElementById(`block-${currentQIndex}`);
+            if (block) {
+                block.classList
